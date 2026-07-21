@@ -1,0 +1,227 @@
+---
+title: "Proyecto_final"
+author: "Karolayn"
+date: "2025-12-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+```
+#Instalación de librerias
+```{r}
+install.packages("dplyr") 
+install.packages("readxl") 
+install.packages("plotly") 
+install.packages("corrplot") 
+```
+```{r}
+library(dplyr)
+library(readxl)
+library(plotly)
+library(corrplot)
+```
+
+#Análisis exploratorio
+
+#1. Cargar Datos
+```{r}
+df_cafe <- read.csv("DatasetForCoffeeSales2.csv")
+```
+
+```{r}
+head(df_cafe)
+
+```
+
+```{r}
+dim(df_cafe)
+```
+
+```{r}
+colnames(df_cafe)
+```
+```{r}
+str(df_cafe)
+```
+
+```{r}
+df_cafe$Date <- as.Date(df_cafe$Date, format = "%d-%m-%Y")
+```
+
+```{r}
+df_cafe$Real_Date <- format(df_cafe$Date, "%d-%m-%Y")
+```
+
+
+```{r}
+sum(duplicated(df_cafe))
+```
+hay 0 filas repetidas
+
+#Estadisticas básicas
+
+```{r}
+summary(df_cafe)
+```
+#Visualización
+
+```{r}
+```
+
+
+```{r}
+plot_ly(data = df_cafe, x = ~Unit.Price, type = "histogram", name = "Unit.Price", marker = list(color = 'skyblue')) %>%
+  layout(title = "Distribución de Unit.Price", 
+         xaxis = list(title = "Unit.Price"),
+         yaxis = list(title = "Frecuencia"))
+```
+
+
+
+
+
+```{r}
+plot_ly(data = df_cafe, x = ~Quantity, type = "histogram", name = "Quantity", marker = list(color = 'pink')) %>%
+  layout(title = "Distribución de Quantity", 
+         xaxis = list(title = "Quantity"),
+         yaxis = list(title = "Frecuencia"))
+```
+
+
+
+
+#Correlacion
+
+```{r}
+variables_numericas <- df_cafe %>% select(where(is.numeric))
+correlaciones <- cor(variables_numericas)
+round(correlaciones, 2)
+```
+
+
+```{r}
+corrplot(correlaciones, method = "color", type = "upper")
+```
+
+Correlación en Sales.Amount y Final.Sales
+
+##Aplico filtro
+
+```{r}
+df_cafe_filtrado <- df_cafe %>% select(Unit.Price, Quantity, Discount_Amount, Final.Sales)
+```
+
+
+#Datos de entrenamiento y validación
+ 
+##Split Data
+
+```{r}
+set.seed(123)  # Para que la partición sea reproducible
+
+# Realizar la partición: 80% entrenamiento, 20% prueba
+n <- nrow(df_cafe_filtrado)
+indice_entrena <- sample(1:n, size = 0.8 * n)
+
+# Crear los datasets
+entrenamiento <- df_cafe_filtrado[indice_entrena, ] # Entrenamiento
+test <- df_cafe_filtrado[-indice_entrena, ] # Testeo
+```
+
+Verifico
+
+```{r}
+dim(entrenamiento)
+```
+
+Son 584 filas y 4 columnas de entrenamiento (80%)
+
+
+```{r}
+dim(test)
+```
+Son 146 filas y 3 columnas de prueba (20%)
+
+
+#Regresión lineas
+
+##Entrenar el modelo
+
+```{r}
+modelo_sales <- lm(Final.Sales ~ Unit.Price +
+                     Discount_Amount+
+                     Quantity,
+                   data = entrenamiento
+)
+
+summary(modelo_sales)
+```
+##Testeo del modelo
+
+```{r}
+predicciones_sales <- predict(modelo_sales, newdata = test)
+```
+
+```{r}
+#agrego predicciones
+
+test$prediccion_sales <- predicciones_sales
+```
+
+##Evaluar el modelo
+
+```{r}
+rmse <- sqrt(mean((test$Final.Sales - test$prediccion_sales)^2))
+mae <- mean(abs(test$Final.Sales - test$prediccion_sales))
+
+# R²
+
+sst <- sum((test$Final.Sales - mean(test$prediccion_sales))^2)
+sse <- sum((test$Final.Sales - test$prediccion_sales)^2)
+r2 <- 1 - (sse / sst)
+
+# Crear tabla resumen
+resumen <- data.frame(
+  RMSE = round(rmse, 4),
+  MAE = round(mae, 4),
+  r2 = round(r2, 4))
+
+
+print(resumen)
+```
+
+
+
+#Visualizar el modelo
+
+```{r}
+plot_ly(test,
+        x= ~Final.Sales,
+        y= ~prediccion_sales,
+        type = 'scatter', 
+        mode = 'markers',
+        marker = list(color = 'royalblue'),
+        text = ~paste("Unit.Price:", Unit.Price ,
+                      "<br>Discount_Amount:" , Discount_Amount ,
+                      "<br>Quantity:", Quantity )) %>%
+  layout(title = "Predicción de Finale Sales vs Final Sales Real",
+         xaxis = list(title = "Final Sales"),
+         yaxis = list(title = "Final Sales"),
+         shapes = list(
+           list(type = "line",
+                x0 = min(test$Final.Sales), x1 = max(test$Final.Sales),
+                y0 = min(test$Final.Sales), y1 = max(test$Final.Sales),
+                line = list(dash = 'dash', color = 'red'))
+         ))
+                      
+      
+```
+
+
+
+
