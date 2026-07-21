@@ -1,4 +1,4 @@
-# ☕ Predicción de Ventas de Café con R
+# Predicción de Ventas de Café con R
 
 ## Descripción del proyecto
 
