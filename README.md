@@ -55,16 +55,6 @@ Variable objetivo:
 
 ---
 
-## Evaluación del modelo
-
-El desempeño del modelo fue evaluado mediante:
-
-- RMSE (Root Mean Squared Error)
-- MAE (Mean Absolute Error)
-- Coeficiente de determinación (R²)
-
----
-
 ## Habilidades demostradas
 
 Durante el desarrollo de este proyecto se aplicaron conocimientos en:
